@@ -1,14 +1,14 @@
 <template>
     <div class="main-container d-flex">
         <div class="input-table-container">
-            <input-add @addItem="addAnItem" :errMsgs="errorMessage"/>
+            <input-add @addItem="addItemWithChecks" :errMsgs="errorMessage"/>
             <comparement-table :scores-values="itemsValues" :key="componentsKey"/>
         </div>
         <div class="radio-container">
             <h1 class="radio-header">Compare items</h1>
             <v-radio-group 
                 v-for="(pairs, i) in comparisonPairs" 
-                v-model="isChecked[i]" 
+                v-model="checkedValues[i]" 
                 :key="pairs.join()" 
                 row 
                 class="pairs-row d-flex"
@@ -35,50 +35,43 @@ export default {
     name: "DoubleComparison",
     components: { ComparementTable, InputAdd },
     data: () => ({
-        itemsValues: { A: 0, B: 0, C: 0 },
-        itemsMatrix: [],
+        itemsValues: {},
+        itemsArray: [],
         comparisonPairs: [],
-        isChecked: [],
+        checkedValues: [],
         componentsKey: 0,
         searchText: "",
         errorMessage: []
     }),
     created() {
-        this.convertToMatrix();
-        this.createInitialComparisonPairs();
+        for (const item of ["A", "B", "C"]) {
+            this.addItem(item);
+        }
     },
     methods: {
         forceRender() {
             this.componentsKey ++;
+            // We need a forceRender, because of use a "itemsValues" in both commponents
         },
-        convertToMatrix() {
-            this.itemsMatrix.push(Object.keys(this.itemsValues));
-        },
-        createInitialComparisonPairs() {
-            for (let i = 0; i < this.itemsMatrix[0].length - 1; i++) {
-                for (let j = i + 1; j < this.itemsMatrix[0].length; j++) {
-                    this.comparisonPairs.push([this.itemsMatrix[0][i], this.itemsMatrix[0][j]]);
+        createPairs(arr1, arr2) {
+            for (let i = 0; i < arr1.length; i++) {
+                for (let j = 0; j < arr2.length; j++) {
+                    this.comparisonPairs.push([arr1[i], arr2[j]]);
                 }
             }
         },
-        createComparisonPairs() {
-            for (let i = 0; i < this.itemsMatrix[0].length; i++) {
-                for (let j = 0; j < this.itemsMatrix[1].length; j++) {
-                    this.comparisonPairs.push([this.itemsMatrix[0][i], this.itemsMatrix[1][j]]);
-                }
-            }
+        addItem(value) {
+            this.itemsValues[value] = 0;
+            this.createPairs(this.itemsArray, value);
+            this.itemsArray.push(value);
         },
-        addAnItem(inputVal) {
-            if (this.itemsMatrix[0].indexOf(inputVal.toUpperCase()) === -1) {
+        addItemWithChecks(inputVal) {
+            if (this.itemsArray[0].indexOf(inputVal.toUpperCase()) === -1) {
                 if (inputVal.length <= 1) {
                     if (inputVal.length) {
-                    this.itemsMatrix.push([inputVal]);
-                    this.itemsValues[inputVal] = 0;
-                    this.createComparisonPairs();
-                    this.itemsMatrix[0].push(inputVal);
-                    this.itemsMatrix.pop();
-                    this.errorMessage = [];
-                    this.forceRender();
+                        this.addItem(inputVal);
+                        this.errorMessage = [];
+                        this.forceRender();
                     } else {
                         this.errorMessage.push("Input shouldn't be empty");
                     }
@@ -91,7 +84,7 @@ export default {
         },
         onChangeHandler() {
             for (const property in this.itemsValues) {
-                this.itemsValues[property] = this.isChecked.filter(item => item === property).length;
+                this.itemsValues[property] = this.checkedValues.filter(item => item === property).length;
                 this.forceRender();
             }
         },
